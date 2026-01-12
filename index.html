@@ -1,0 +1,288 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>İyi ki Doğdun!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- TEMEL AYARLAR --- */
+        :root {
+            --primary: #ff6b81; --secondary: #ffecd2; --glass: rgba(255, 255, 255, 0.4);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15); --cake-pink: #ff9a9e; --cake-cream: #fff5e6;
+        }
+        body {
+            margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center;
+              background: linear-gradient(45deg, #f6d365 0%, #383c68 50%, #f5576c 100%);
+            background-size: 400% 400%; animation: gradientBG 15s ease infinite;
+            font-family: 'Poppins', sans-serif; overflow-x: hidden; -webkit-touch-callout: none; user-select: none;
+        }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        
+        .glass-card {
+            background: var(--glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: var(--shadow);
+            padding: 30px 20px; width: 90%; max-width: 550px;
+            text-align: center; position: relative; z-index: 10; transition: height 0.3s;
+        }
+        h1 { font-family: 'Dancing Script', cursive; color: #c2185b; font-size: 3.2rem; margin: 0; text-shadow: 2px 2px 4px rgba(255,255,255,0.5); }
+        p.intro { color: #444; font-weight: 400; font-size: 1rem; margin-top: 15px; line-height: 1.5; }
+
+        /* --- FOTOĞRAF ALANI (GALLERY MODU) --- */
+        .photo-stack {
+            position: relative; 
+            height: 220px; 
+            margin: 20px 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            -webkit-tap-highlight-color: transparent; /* Mobilde gri kutuyu kaldır */
+        }
+        .photo {
+            position: absolute; width: 140px; height: 170px; background: #fff;
+            padding: 8px 8px 25px 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1); border-radius: 4px;
+        }
+        .photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; pointer-events: none; }
+        
+        /* Default Stacked */
+        .photo:nth-child(1) { transform: rotate(-12deg) translateX(-30px) scale(0.9); z-index: 1; }
+        .photo:nth-child(2) { transform: rotate(8deg) translateX(30px) scale(0.95); z-index: 2; }
+        .photo:nth-child(3) { transform: rotate(-3deg) translateY(-10px); z-index: 3; }
+
+        /* OPEN MODE (Yan Yana) */
+        .photo-stack.open {
+            height: auto; min-height: 200px;
+            flex-direction: row; flex-wrap: wrap; gap: 10px;
+            align-items: flex-start;
+        }
+        .photo-stack.open .photo {
+            position: relative; transform: none !important; top: auto !important; left: auto !important;
+            width: 44%; /* Mobilde yan yana 2 tane sığsın */
+            height: auto; aspect-ratio: 3/4; margin-bottom: 10px;
+        }
+        .photo-stack.open .photo:hover { transform: scale(1.05); z-index: 20; }
+
+        /* --- PASTA --- */
+        .cake-wrapper { position: relative; margin-top: 30px; height: 160px; display: flex; justify-content: center; align-items: flex-end; animation: subtle-float 3s ease-in-out infinite alternate; }
+        @keyframes subtle-float { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
+        .plate { position: absolute; bottom: 0; width: 240px; height: 20px; background: #dfe6e9; border-radius: 50%; box-shadow: 0 5px 10px rgba(0,0,0,0.1); z-index: 1; }
+        .layer { position: absolute; background: var(--cake-pink); border-radius: 15px 15px 5px 5px; box-shadow: inset 0 -10px rgba(0,0,0,0.05), 0 5px 10px rgba(0,0,0,0.1); display: flex; justify-content: center; }
+        .icing-drip { position: absolute; top: 0; width: 100%; height: 45%; background: var(--cake-cream); border-radius: 15px 15px 30px 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .pearls { position: absolute; bottom: -5px; width: 100%; height: 10px; background-image: radial-gradient(circle, var(--cake-cream) 4px, transparent 5px); background-size: 15px 15px; background-repeat: repeat-x; z-index: 5; }
+        .bottom-tier { bottom: 15px; width: 180px; height: 70px; z-index: 2; }
+        .top-tier { bottom: 85px; width: 120px; height: 60px; z-index: 3; }
+        .candle-container { position: absolute; top: -45px; z-index: 4; }
+        .candle { width: 16px; height: 45px; background: repeating-linear-gradient(45deg, #fff, #fff 5px, #ff6b81 5px, #ff6b81 10px); border-radius: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; }
+        .flame { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 16px; height: 22px; background: radial-gradient(ellipse at bottom, #ffdd55 0%, #ff5500 80%); border-radius: 50% 50% 20% 20%; box-shadow: 0 0 15px #ffdd55, 0 0 30px #ff5500; filter: blur(1px); transition: opacity 0.3s, transform 0.1s; transform-origin: center bottom; animation: natural-flicker 1s infinite alternate; }
+        @keyframes natural-flicker { 0% { transform: translateX(-50%) scale(1); opacity: 0.9; } 100% { transform: translateX(-50%) scale(1.1); opacity: 1; } }
+        .flame.out { opacity: 0 !important; transform: scale(0) !important; animation: none !important; }
+        
+        /* --- BUTONLAR --- */
+        .btn-group { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; align-items: center; width: 100%; }
+        .btn-wish { padding: 15px 30px; border: none; background: linear-gradient(to right, #ff6b81, #ff4757); color: white; font-family: 'Poppins', sans-serif; font-size: 1rem; font-weight: 600; border-radius: 50px; cursor: pointer; box-shadow: 0 10px 20px rgba(255, 107, 129, 0.3); transition: transform 0.2s; z-index: 20; width: 80%; }
+        .btn-wish:hover { transform: translateY(-3px); } .btn-wish:active { transform: translateY(2px); }
+        .status-text { font-size: 0.8rem; color: #555; min-height: 20px; margin-bottom: 5px; }
+        .hint { font-size: 0.75rem; color: #777; margin-bottom: 5px; opacity: 0.8; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <canvas id="celebration-canvas"></canvas>
+
+    <div class="glass-card">
+        <h1>İyi ki Doğdun!</h1>
+        <p class="intro">Hayatının her anı bu pasta kadar tatlı senin kadar güzel olsun. 🎂</p>
+
+        <p class="hint">(Fotoğrafları incelemek için üzerine dokun)</p>
+        <div class="photo-stack" onclick="toggleGallery(this)">
+            <div class="photo"><img src="2.jpeg" alt="Foto 1"></div>
+            <div class="photo"><img src="3.jpeg" alt="Foto 2"></div>
+            <div class="photo"><img src="1.jpeg" alt="Foto 3"></div>
+        </div>
+    </br>
+        <div class="cake-wrapper">
+            <div class="plate"></div>
+            <div class="layer bottom-tier"><div class="icing-drip"></div><div class="pearls"></div></div>
+            <div class="layer top-tier">
+                <div class="icing-drip"></div><div class="pearls"></div>
+                <div class="candle-container">
+                    <div class="candle">
+                        <div class="flame" id="flame"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <p id="statusMsg" class="status-text">Butona basarak mikrofonu aç...</p>
+            <button class="btn-wish" id="actionBtn" onclick="requestMicPermission()">🎤 Mikrofonu Aç & Dilek Tut</button>
+            <button class="btn-wish hidden" id="manualBtn" style="background: #2ed573;" onclick="celebrate()">🌬️ Tıkla ve Söndür (Yedek)</button>
+        </div>
+        
+        <audio id="birthdaySong" loop preload="auto">
+            <source src="1.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <script>
+        // --- FOTOĞRAF GALERİSİ ---
+        function toggleGallery(element) {
+            element.classList.toggle('open');
+        }
+
+        // --- DEĞİŞKENLER ---
+        let audioContext;
+        let microphone;
+        let analyser;
+        let isCelebrated = false;
+        const flame = document.getElementById('flame');
+        const statusMsg = document.getElementById('statusMsg');
+        const actionBtn = document.getElementById('actionBtn');
+        const manualBtn = document.getElementById('manualBtn');
+        const song = document.getElementById('birthdaySong');
+        song.volume = 0.5;
+
+        // --- MİKROFON İZNİ VE SES BAŞLATMA (MOBİL UYUMLU) ---
+        async function requestMicPermission() {
+            // 1. Müzik Başlatma (iOS için kullanıcı etkileşimi şart)
+            try {
+                // Eğer müzik çalmıyorsa başlat
+                if (song.paused) {
+                    await song.play();
+                }
+            } catch (err) {
+                console.log("Müzik otomatik başlatılamadı, sorun yok.");
+            }
+
+            statusMsg.innerText = "İzin isteniyor...";
+            actionBtn.disabled = true;
+
+            // 2. Tarayıcı Desteği Kontrolü
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert("Tarayıcınız mikrofon erişimini desteklemiyor veya site HTTPS değil.");
+                showManualMode();
+                return;
+            }
+
+            // 3. AudioContext Hazırlığı (iOS Safari Hack)
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioContext();
+                
+                // Askıda kalan ses motorunu uyandır
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+
+                // 4. Mikrofon Akışını İste
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+                analyser.fftSize = 256;
+
+                // Başarılı!
+                actionBtn.innerText = "Şimdi Üfle! 🌬️";
+                actionBtn.style.backgroundColor = "#ff9f43";
+                actionBtn.disabled = false; // Butonu tekrar aktif et, belki elle basmak ister
+                statusMsg.innerText = "Mikrofon dinleniyor... Muma üfle!";
+                
+                detectBlow();
+
+            } catch (err) {
+                console.error("Hata:", err);
+                // İzin reddedildi veya hata oluştu
+                statusMsg.innerText = "İzin verilmedi. Yedek butonu kullan 👇";
+                showManualMode();
+            }
+        }
+
+        function showManualMode() {
+            actionBtn.classList.add('hidden');
+            manualBtn.classList.remove('hidden');
+        }
+
+        // --- ÜFLEME ALGILAMA ---
+        function detectBlow() {
+            if (isCelebrated) return;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            let sum = 0;
+            for(let i = 0; i < bufferLength; i++) {
+                sum += dataArray[i];
+            }
+            let average = sum / bufferLength;
+
+            // Görsel Efekt (Titreme)
+            if (average > 10) { 
+                let flicker = 1 - (average/100); 
+                if(flicker < 0.2) flicker = 0.2;
+                flame.style.opacity = flicker;
+                flame.style.transform = `translateX(-50%) scale(${1 + Math.random()*0.3}) skewX(${Math.random()*10-5}deg)`;
+            } else {
+                flame.style.opacity = 1;
+            }
+
+            // Eşik Değeri (Mobilde gürültü olabilir, değeri ayarladık)
+            if (average > 35) {
+                celebrate();
+            } else {
+                requestAnimationFrame(detectBlow);
+            }
+        }
+
+        // --- KUTLAMA ---
+        function celebrate() {
+            if (isCelebrated) return;
+            isCelebrated = true;
+
+            // Görsel Değişiklikler
+            flame.classList.add('out');
+            statusMsg.innerText = "Dileğin kabul oldu! 🎉";
+            actionBtn.classList.add('hidden');
+            manualBtn.classList.add('hidden'); // Tüm butonları gizle
+
+            // Müzik kontrolü
+            if (song.paused) { song.play().catch(e => console.log(e)); }
+
+            // Efektler
+            startConfettiRain();
+            createBalloons();
+        }
+
+        // --- CANVAS (KONFETİ & BALON) ---
+        const canvas = document.getElementById('celebration-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particles = [], balloons = [];
+        const colors = ['#ffc93c', '#ff6b81', '#6c5ce7', '#00cec9', '#fd79a8', '#fab1a0'];
+
+        function startConfettiRain() {
+            for(let i=0; i<300; i++) particles.push({x:Math.random()*window.innerWidth, y:Math.random()*-window.innerHeight, w:Math.random()*10+5, h:Math.random()*10+5, vx:(Math.random()-0.5)*4, vy:Math.random()*4+2, color:colors[Math.floor(Math.random()*colors.length)], rot:Math.random()*360});
+        }
+        function createBalloons() {
+            for(let i=0; i<15; i++) balloons.push({x:Math.random()*window.innerWidth, y:window.innerHeight+Math.random()*100, r:Math.random()*20+20, vy:Math.random()*3+1, color:colors[Math.floor(Math.random()*colors.length)]});
+            loopAnim();
+        }
+        function loopAnim() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            particles.forEach((p,i)=>{p.x+=p.vx;p.y+=p.vy;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.w,p.h);if(p.y>canvas.height)particles.splice(i,1);});
+            balloons.forEach((b,i)=>{b.y-=b.vy;ctx.globalAlpha=0.7;ctx.fillStyle=b.color;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(b.x,b.y+b.r);ctx.lineTo(b.x,b.y+b.r+40);ctx.stroke();ctx.globalAlpha=1;if(b.y<-100)balloons.splice(i,1);});
+            if(particles.length>0||balloons.length>0)requestAnimationFrame(loopAnim);
+        }
+        window.addEventListener('resize', ()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+    </script>
+</body>
+</html>
