@@ -129,18 +129,21 @@
             <source src="1.mp3" type="audio/mpeg">
         </audio>
     </div>
-
-    <script>
-        // --- FOTOĞRAF GALERİSİ ---
+<script>
         function toggleGallery(element) {
             element.classList.toggle('open');
         }
 
-        // --- DEĞİŞKENLER ---
         let audioContext;
         let microphone;
         let analyser;
         let isCelebrated = false;
+        
+        // AKILLI KALİBRASYON DEĞİŞKENLERİ
+        let isCalibrating = false;
+        let calibrationMaxNoise = 0;
+        let blowThreshold = 60; // Varsayılan eşik (Kalibrasyonla güncellenecek)
+
         const flame = document.getElementById('flame');
         const statusMsg = document.getElementById('statusMsg');
         const actionBtn = document.getElementById('actionBtn');
@@ -148,58 +151,68 @@
         const song = document.getElementById('birthdaySong');
         song.volume = 0.5;
 
-        // --- MİKROFON İZNİ VE SES BAŞLATMA (MOBİL UYUMLU) ---
-        async function requestMicPermission() {
-            // 1. Müzik Başlatma (iOS için kullanıcı etkileşimi şart)
-            try {
-                // Eğer müzik çalmıyorsa başlat
-                if (song.paused) {
-                    await song.play();
-                }
-            } catch (err) {
-                console.log("Müzik otomatik başlatılamadı, sorun yok.");
-            }
-
-            statusMsg.innerText = "İzin isteniyor...";
+        // --- MİKROFON İSTEĞİ ---
+        function requestMicPermission() {
+            actionBtn.innerText = "İzin isteniyor...";
             actionBtn.disabled = true;
 
-            // 2. Tarayıcı Desteği Kontrolü
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                alert("Tarayıcınız mikrofon erişimini desteklemiyor veya site HTTPS değil.");
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(handleStreamSuccess)
+                .catch(function(err) {
+                    console.error("Mikrofon hatası:", err);
+                    alert("Mikrofon izni verilmedi. Manuel butonu kullanabilirsin.");
+                    showManualMode();
+                });
+            } else {
+                alert("Tarayıcın mikrofonu desteklemiyor (veya site HTTPS değil).");
                 showManualMode();
-                return;
             }
+        }
 
-            // 3. AudioContext Hazırlığı (iOS Safari Hack)
+        function handleStreamSuccess(stream) {
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 audioContext = new AudioContext();
-                
-                // Askıda kalan ses motorunu uyandır
-                if (audioContext.state === 'suspended') {
-                    await audioContext.resume();
-                }
-
-                // 4. Mikrofon Akışını İste
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                
                 analyser = audioContext.createAnalyser();
                 microphone = audioContext.createMediaStreamSource(stream);
                 microphone.connect(analyser);
                 analyser.fftSize = 256;
+                // Daha pürüzsüz analiz için
+                analyser.smoothingTimeConstant = 0.3; 
 
-                // Başarılı!
-                actionBtn.innerText = "Şimdi Üfle! 🌬️";
-                actionBtn.style.backgroundColor = "#ff9f43";
-                actionBtn.disabled = false; // Butonu tekrar aktif et, belki elle basmak ister
-                statusMsg.innerText = "Mikrofon dinleniyor... Muma üfle!";
+                song.play().catch(e => console.log("Müzik çalma hatası (önemsiz)"));
+
+                // --- KALİBRASYON SÜRECİNİ BAŞLAT ---
+                isCalibrating = true;
+                calibrationMaxNoise = 0;
                 
-                detectBlow();
+                statusMsg.innerText = "Ortam sesi ölçülüyor... (Bekle 3sn)";
+                statusMsg.style.color = "#d35400";
+                
+                // 3 saniye sonra kalibrasyonu bitir
+                setTimeout(() => {
+                    isCalibrating = false;
+                    
+                    // Eşik değerini ayarla:
+                    // Ölçülen en yüksek gürültü + 30 birim güvenlik payı
+                    // Ama en az 60 olsun (sessiz odalar için)
+                    blowThreshold = Math.max(calibrationMaxNoise + 30, 60);
+                    
+                    console.log("Kalibrasyon Bitti. Gürültü:", calibrationMaxNoise, "Yeni Eşik:", blowThreshold);
 
-            } catch (err) {
-                console.error("Hata:", err);
-                // İzin reddedildi veya hata oluştu
-                statusMsg.innerText = "İzin verilmedi. Yedek butonu kullan 👇";
+                    actionBtn.innerText = "Şimdi Üfle! 🌬️";
+                    actionBtn.style.backgroundColor = "#ff9f43";
+                    statusMsg.innerText = "Hazır! Muma doğru kuvvetlice üfle!";
+                    statusMsg.style.color = "#27ae60";
+                    actionBtn.disabled = false;
+
+                }, 3000);
+                
+                detectBlow(); 
+
+            } catch (e) {
+                console.error("AudioContext hatası:", e);
                 showManualMode();
             }
         }
@@ -207,9 +220,9 @@
         function showManualMode() {
             actionBtn.classList.add('hidden');
             manualBtn.classList.remove('hidden');
+            statusMsg.innerText = "Yedek buton aktif:";
         }
 
-        // --- ÜFLEME ALGILAMA ---
         function detectBlow() {
             if (isCelebrated) return;
 
@@ -218,14 +231,27 @@
             analyser.getByteFrequencyData(dataArray);
 
             let sum = 0;
-            for(let i = 0; i < bufferLength; i++) {
-                sum += dataArray[i];
-            }
+            for(let i = 0; i < bufferLength; i++) { sum += dataArray[i]; }
             let average = sum / bufferLength;
 
-            // Görsel Efekt (Titreme)
+            // --- KALİBRASYON MODU ---
+            if (isCalibrating) {
+                // Ortamdaki en yüksek sesi kaydet
+                if (average > calibrationMaxNoise) {
+                    calibrationMaxNoise = average;
+                }
+                // Titreme efekti az olsun (sadece mikrofonun çalıştığını göstermek için)
+                flame.style.opacity = 0.8 + (Math.random() * 0.2);
+                
+                requestAnimationFrame(detectBlow);
+                return;
+            }
+
+            // --- NORMAL MOD (ALGILAMA) ---
+            
+            // Görsel efekt (ses seviyesine göre titreme)
             if (average > 10) { 
-                let flicker = 1 - (average/100); 
+                let flicker = 1 - (average/150); 
                 if(flicker < 0.2) flicker = 0.2;
                 flame.style.opacity = flicker;
                 flame.style.transform = `translateX(-50%) scale(${1 + Math.random()*0.3}) skewX(${Math.random()*10-5}deg)`;
@@ -233,55 +259,39 @@
                 flame.style.opacity = 1;
             }
 
-            // Eşik Değeri (Mobilde gürültü olabilir, değeri ayarladık)
-            if (average > 35) {
-                celebrate();
-            } else {
-                requestAnimationFrame(detectBlow);
+            // DİNAMİK EŞİK KONTROLÜ
+            // Ses seviyesi, kalibrasyonla belirlenen eşiği geçti mi?
+            if (average > blowThreshold) { 
+                celebrate(); 
+            } else { 
+                requestAnimationFrame(detectBlow); 
             }
         }
 
-        // --- KUTLAMA ---
         function celebrate() {
             if (isCelebrated) return;
             isCelebrated = true;
-
-            // Görsel Değişiklikler
             flame.classList.add('out');
             statusMsg.innerText = "Dileğin kabul oldu! 🎉";
             actionBtn.classList.add('hidden');
-            manualBtn.classList.add('hidden'); // Tüm butonları gizle
-
-            // Müzik kontrolü
+            manualBtn.classList.add('hidden');
+            
             if (song.paused) { song.play().catch(e => console.log(e)); }
-
-            // Efektler
+            
             startConfettiRain();
             createBalloons();
         }
 
-        // --- CANVAS (KONFETİ & BALON) ---
         const canvas = document.getElementById('celebration-canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-
         let particles = [], balloons = [];
         const colors = ['#ffc93c', '#ff6b81', '#6c5ce7', '#00cec9', '#fd79a8', '#fab1a0'];
 
-        function startConfettiRain() {
-            for(let i=0; i<300; i++) particles.push({x:Math.random()*window.innerWidth, y:Math.random()*-window.innerHeight, w:Math.random()*10+5, h:Math.random()*10+5, vx:(Math.random()-0.5)*4, vy:Math.random()*4+2, color:colors[Math.floor(Math.random()*colors.length)], rot:Math.random()*360});
-        }
-        function createBalloons() {
-            for(let i=0; i<15; i++) balloons.push({x:Math.random()*window.innerWidth, y:window.innerHeight+Math.random()*100, r:Math.random()*20+20, vy:Math.random()*3+1, color:colors[Math.floor(Math.random()*colors.length)]});
-            loopAnim();
-        }
-        function loopAnim() {
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-            particles.forEach((p,i)=>{p.x+=p.vx;p.y+=p.vy;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.w,p.h);if(p.y>canvas.height)particles.splice(i,1);});
-            balloons.forEach((b,i)=>{b.y-=b.vy;ctx.globalAlpha=0.7;ctx.fillStyle=b.color;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(b.x,b.y+b.r);ctx.lineTo(b.x,b.y+b.r+40);ctx.stroke();ctx.globalAlpha=1;if(b.y<-100)balloons.splice(i,1);});
-            if(particles.length>0||balloons.length>0)requestAnimationFrame(loopAnim);
-        }
+        function startConfettiRain() { for(let i=0; i<300; i++) particles.push({x:Math.random()*window.innerWidth, y:Math.random()*-window.innerHeight, w:Math.random()*10+5, h:Math.random()*10+5, vx:(Math.random()-0.5)*4, vy:Math.random()*4+2, color:colors[Math.floor(Math.random()*colors.length)], rot:Math.random()*360}); }
+        function createBalloons() { for(let i=0; i<15; i++) balloons.push({x:Math.random()*window.innerWidth, y:window.innerHeight+Math.random()*100, r:Math.random()*20+20, vy:Math.random()*3+1, color:colors[Math.floor(Math.random()*colors.length)]}); loopAnim(); }
+        function loopAnim() { ctx.clearRect(0,0,canvas.width,canvas.height); particles.forEach((p,i)=>{p.x+=p.vx;p.y+=p.vy;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.w,p.h);if(p.y>canvas.height)particles.splice(i,1);}); balloons.forEach((b,i)=>{b.y-=b.vy;ctx.globalAlpha=0.7;ctx.fillStyle=b.color;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(b.x,b.y+b.r);ctx.lineTo(b.x,b.y+b.r+40);ctx.stroke();ctx.globalAlpha=1;if(b.y<-100)balloons.splice(i,1);}); if(particles.length>0||balloons.length>0)requestAnimationFrame(loopAnim); }
         window.addEventListener('resize', ()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
     </script>
 </body>
